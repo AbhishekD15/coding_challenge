@@ -11,4 +11,5 @@ urlpatterns = [
     path("admission/courses/", views.ListCourses.as_view(), name="list_courses"),
     path("token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),  # JWT token obtain
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),  # JWT token refresh
+    path('health/', views.HealthCheck.as_view(), name='health_check'),  # Health check endpoint
 ]
