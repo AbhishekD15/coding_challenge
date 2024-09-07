@@ -1,0 +1,20 @@
+# Python
+*.pyc
+__pycache__/
+
+# Virtual Environments
+.env
+.venv
+env/
+venv/
+
+# Django
+db.sqlite3
+media/
+
+# Pipenv
+Pipfile.lock
+
+# Docker
+*.log
+docker-compose.override.yml

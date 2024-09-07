@@ -1,0 +1,13 @@
+services:
+  django:
+    build:
+      context: .
+      args:
+        PIPENV_INSTALL_ARGS: --system --deploy --dev
+    command: python manage.py runserver 0.0.0.0:8000
+    ports:
+      - 8000:8000
+    volumes:
+      - .:/app
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.local
