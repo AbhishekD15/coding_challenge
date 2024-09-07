@@ -1,4 +1,6 @@
 import csv
+from django.core.exceptions import ValidationError
+from django.forms import ModelForm
 from django import forms
 from django.contrib import admin
 from django.http import HttpResponse
@@ -25,17 +27,26 @@ def export_courses_to_csv(modeladmin, request, queryset):
 export_courses_to_csv.short_description = "Export selected courses to CSV"
 
 # Change widget for date fields in Intake
-class IntakeAdminForm(forms.ModelForm):
-    """
-    Custom admin form for Intake with widgets for date fields.
-    """
+class IntakeAdminForm(ModelForm):
     class Meta:
         model = Intake
         fields = '__all__'
         widgets = {
-            'start_date': forms.DateInput(attrs={'type': 'date'}),  # Date picker for start_date
-            'end_date': forms.DateInput(attrs={'type': 'date'}),    # Date picker for end_date
+            'start_date': forms.DateInput(attrs={'type': 'date'}),
+            'end_date': forms.DateInput(attrs={'type': 'date'}),
         }
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        start_date = cleaned_data.get('start_date')
+        end_date = cleaned_data.get('end_date')
+
+        # Check if end date is before start date
+        if end_date and start_date and end_date < start_date:
+            raise ValidationError({
+                'end_date': "End date cannot be earlier than the start date."
+            })
+        return cleaned_data
 
 # Inline admin for managing intakes directly in the course admin page
 class IntakeInline(admin.TabularInline):
