@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.http import HttpResponse
 from .models import Course, Intake
 
-# Custom Action: Export selected courses to CSV
+# Export selected courses to CSV
 def export_courses_to_csv(modeladmin, request, queryset):
     """
     Custom admin action to export course data to CSV.
@@ -24,10 +24,10 @@ def export_courses_to_csv(modeladmin, request, queryset):
 
 export_courses_to_csv.short_description = "Export selected courses to CSV"
 
-# Custom Form: Change widget for date fields in Intake
+# Change widget for date fields in Intake
 class IntakeAdminForm(forms.ModelForm):
     """
-    Custom admin form for Intake with improved widgets for date fields.
+    Custom admin form for Intake with widgets for date fields.
     """
     class Meta:
         model = Intake
@@ -43,7 +43,7 @@ class IntakeInline(admin.TabularInline):
     Inline admin for Intake objects within the Course admin page.
     """
     model = Intake
-    extra = 1  # Allows adding one new intake directly from the course page
+    extra = 1  # Allows adding one new intake directly from the course page, could be updated to allow multiple
 
 # Register the Course model with custom actions and inline intake editor
 @admin.register(Course)
@@ -62,7 +62,7 @@ class IntakeAdmin(admin.ModelAdmin):
     list_display = ['course', 'start_date', 'end_date']
     list_filter = ['course', 'start_date', 'end_date']
     search_fields = ['course__name', 'start_date', 'end_date']
-    autocomplete_fields = ['course']  # Add this line to enable autocomplete on the course field
+    autocomplete_fields = ['course']  # Enable autocomplete on the course field
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "course":
