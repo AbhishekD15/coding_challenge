@@ -2,53 +2,54 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
+from django.http import Http404
 from apps.admission.models import Course, Intake
 from .serializers import CourseSerializer, IntakeSerializer
 
 # HealthCheck View
 class HealthCheck(APIView):
-    """
-    A simple health check endpoint to verify if the API is up and running.
-    This endpoint is public and does not require authentication.
-    """
     permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
         return Response({"status": "OK"}, status=status.HTTP_200_OK)
 
 
+# Custom Pagination Class
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+
 # Course Views
 class ListCourses(APIView):
-    """
-    View to list all courses.
-    Allows optional inclusion of intakes via a query parameter `?with_intakes=true`.
-    Only authenticated users can access this endpoint.
-    """
     permission_classes = [IsAuthenticated]
+    pagination_class = StandardResultsSetPagination
 
     def get(self, request, *args, **kwargs):
         try:
-            # Check if the query parameter 'with_intakes' is passed and equals 'true'
             with_intakes = request.query_params.get('with_intakes', 'false').lower() == 'true'
 
             if with_intakes:
-                courses = Course.objects.prefetch_related('intakes').all()  # Prefetch intakes for optimization
-                serializer = CourseSerializer(courses, many=True)
+                courses = Course.objects.prefetch_related('intakes').order_by('id').all()
             else:
-                courses = Course.objects.all()  # No need to prefetch intakes
-                serializer = CourseSerializer(courses, many=True, exclude_intakes=True)
+                courses = Course.objects.order_by('id').all()
 
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            paginator = self.pagination_class()
+            page = paginator.paginate_queryset(courses, request)
+            if with_intakes:
+                serializer = CourseSerializer(page, many=True)
+            else:
+                serializer = CourseSerializer(page, many=True, exclude_intakes=True)
+
+            return paginator.get_paginated_response(serializer.data)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class CreateCourse(APIView):
-    """
-    View to create a new course.
-    Only users with 'add_course' permission can create a new course.
-    """
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
@@ -63,10 +64,6 @@ class CreateCourse(APIView):
 
 
 class RetrieveCourse(APIView):
-    """
-    View to retrieve a single course by ID.
-    Only users with 'view_course' permission can access this endpoint.
-    """
     permission_classes = [IsAuthenticated]
 
     def get(self, request, course_id, *args, **kwargs):
@@ -77,15 +74,13 @@ class RetrieveCourse(APIView):
             
             serializer = CourseSerializer(course)
             return Response(serializer.data, status=status.HTTP_200_OK)
+        except Http404:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class UpdateCourse(APIView):
-    """
-    View to update a course by ID.
-    Only users with 'change_course' permission can update a course.
-    """
     permission_classes = [IsAuthenticated]
 
     def put(self, request, course_id, *args, **kwargs):
@@ -99,15 +94,13 @@ class UpdateCourse(APIView):
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Http404:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class DeleteCourse(APIView):
-    """
-    View to delete a course by ID.
-    Only users with 'delete_course' permission can delete a course.
-    """
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, course_id, *args, **kwargs):
@@ -118,6 +111,8 @@ class DeleteCourse(APIView):
             
             course.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
+        except Http404:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -125,11 +120,8 @@ class DeleteCourse(APIView):
 # Intake Views
 
 class ListIntakes(APIView):
-    """
-    View to list all intakes for a specific course.
-    Only users with 'view_intake' permission can access this endpoint.
-    """
     permission_classes = [IsAuthenticated]
+    pagination_class = StandardResultsSetPagination
 
     def get(self, request, course_id, *args, **kwargs):
         try:
@@ -137,18 +129,16 @@ class ListIntakes(APIView):
             if not request.user.has_perm('admission.view_intake'):
                 return Response({"detail": "You do not have permission to view these intakes."}, status=status.HTTP_403_FORBIDDEN)
             
-            intakes = course.intakes.all()
-            serializer = IntakeSerializer(intakes, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            intakes = course.intakes.order_by('id').all()
+            paginator = self.pagination_class()
+            page = paginator.paginate_queryset(intakes, request)
+            serializer = IntakeSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class CreateIntake(APIView):
-    """
-    View to create an intake for a specific course.
-    Only users with 'add_intake' permission can create an intake.
-    """
     permission_classes = [IsAuthenticated]
 
     def post(self, request, course_id, *args, **kwargs):
@@ -167,10 +157,6 @@ class CreateIntake(APIView):
 
 
 class RetrieveIntake(APIView):
-    """
-    View to retrieve a specific intake for a course.
-    Only users with 'view_intake' permission can access this endpoint.
-    """
     permission_classes = [IsAuthenticated]
 
     def get(self, request, course_id, intake_id, *args, **kwargs):
@@ -181,15 +167,13 @@ class RetrieveIntake(APIView):
             
             serializer = IntakeSerializer(intake)
             return Response(serializer.data, status=status.HTTP_200_OK)
+        except Http404:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class UpdateIntake(APIView):
-    """
-    View to update a specific intake for a course.
-    Only users with 'change_intake' permission can update an intake.
-    """
     permission_classes = [IsAuthenticated]
 
     def put(self, request, course_id, intake_id, *args, **kwargs):
@@ -203,15 +187,13 @@ class UpdateIntake(APIView):
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Http404:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class DeleteIntake(APIView):
-    """
-    View to delete a specific intake for a course.
-    Only users with 'delete_intake' permission can delete an intake.
-    """
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, course_id, intake_id, *args, **kwargs):
@@ -222,5 +204,7 @@ class DeleteIntake(APIView):
             
             intake.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
+        except Http404:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
