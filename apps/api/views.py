@@ -10,6 +10,9 @@ from .serializers import CourseSerializer, IntakeSerializer
 
 # HealthCheck View
 class HealthCheck(APIView):
+    """
+    HealthCheck endpoint to verify that the API is running.
+    """
     permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
@@ -18,6 +21,9 @@ class HealthCheck(APIView):
 
 # Custom Pagination Class
 class StandardResultsSetPagination(PageNumberPagination):
+    """
+    Custom pagination class to control the number of results per page.
+    """
     page_size = 10
     page_size_query_param = 'page_size'
     max_page_size = 100
@@ -25,6 +31,10 @@ class StandardResultsSetPagination(PageNumberPagination):
 
 # Course Views
 class ListCourses(APIView):
+    """
+    Endpoint to list all courses.
+    Supports optional inclusion of intakes and pagination.
+    """
     permission_classes = [IsAuthenticated]
     pagination_class = StandardResultsSetPagination
 
@@ -50,6 +60,10 @@ class ListCourses(APIView):
 
 
 class CreateCourse(APIView):
+    """
+    Endpoint to create a new course.
+    Requires 'admission.add_course' permission.
+    """
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
@@ -64,6 +78,10 @@ class CreateCourse(APIView):
 
 
 class RetrieveCourse(APIView):
+    """
+    Endpoint to retrieve a specific course by ID.
+    Requires 'admission.view_course' permission.
+    """
     permission_classes = [IsAuthenticated]
 
     def get(self, request, course_id, *args, **kwargs):
@@ -81,6 +99,10 @@ class RetrieveCourse(APIView):
 
 
 class UpdateCourse(APIView):
+    """
+    Endpoint to update a specific course by ID.
+    Requires 'admission.change_course' permission.
+    """
     permission_classes = [IsAuthenticated]
 
     def put(self, request, course_id, *args, **kwargs):
@@ -101,6 +123,10 @@ class UpdateCourse(APIView):
 
 
 class DeleteCourse(APIView):
+    """
+    Endpoint to delete a specific course by ID.
+    Requires 'admission.delete_course' permission.
+    """
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, course_id, *args, **kwargs):
@@ -120,6 +146,10 @@ class DeleteCourse(APIView):
 # Intake Views
 
 class ListIntakes(APIView):
+    """
+    Endpoint to list all intakes for a specific course.
+    Supports pagination.
+    """
     permission_classes = [IsAuthenticated]
     pagination_class = StandardResultsSetPagination
 
@@ -139,6 +169,10 @@ class ListIntakes(APIView):
 
 
 class CreateIntake(APIView):
+    """
+    Endpoint to create a new intake for a specific course.
+    Requires 'admission.add_intake' permission.
+    """
     permission_classes = [IsAuthenticated]
 
     def post(self, request, course_id, *args, **kwargs):
@@ -157,6 +191,10 @@ class CreateIntake(APIView):
 
 
 class RetrieveIntake(APIView):
+    """
+    Endpoint to retrieve a specific intake by ID for a specific course.
+    Requires 'admission.view_intake' permission.
+    """
     permission_classes = [IsAuthenticated]
 
     def get(self, request, course_id, intake_id, *args, **kwargs):
@@ -174,6 +212,10 @@ class RetrieveIntake(APIView):
 
 
 class UpdateIntake(APIView):
+    """
+    Endpoint to update a specific intake by ID for a specific course.
+    Requires 'admission.change_intake' permission.
+    """
     permission_classes = [IsAuthenticated]
 
     def put(self, request, course_id, intake_id, *args, **kwargs):
@@ -194,6 +236,10 @@ class UpdateIntake(APIView):
 
 
 class DeleteIntake(APIView):
+    """
+    Endpoint to delete a specific intake by ID for a specific course.
+    Requires 'admission.delete_intake' permission.
+    """
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, course_id, intake_id, *args, **kwargs):
