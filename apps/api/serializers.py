@@ -10,7 +10,7 @@ class IntakeSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Intake
-        fields = ['id', 'start_date', 'end_date'] 
+        fields = ['id', 'start_date', 'end_date']
 
 class CourseSerializer(serializers.ModelSerializer):
     """
@@ -31,7 +31,14 @@ class CourseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = ['id', 'name', 'intakes'] #
+        fields = ['id', 'name', 'intakes']
+
+    def __init__(self, *args, **kwargs):
+        # Allow the option to exclude 'intakes' field if it's not needed
+        exclude_intakes = kwargs.pop('exclude_intakes', False)  # Get the flag from the view
+        super().__init__(*args, **kwargs)
+        if exclude_intakes:
+            self.fields.pop('intakes')  # Exclude intakes field if the flag is true
 
     def create(self, validated_data):
         """
@@ -48,6 +55,6 @@ class CourseSerializer(serializers.ModelSerializer):
         The instance refers to the Course object to be updated.
         The validated_data contains the updated values for the Course fields.
         """
-        instance.name = validated_data.get('name', instance.name)  
+        instance.name = validated_data.get('name', instance.name)
         instance.save()
         return instance

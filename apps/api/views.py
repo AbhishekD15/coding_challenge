@@ -19,18 +19,26 @@ class HealthCheck(APIView):
 
 
 # Course Views
-
 class ListCourses(APIView):
     """
-    View to list all courses along with their intakes.
+    View to list all courses.
+    Allows optional inclusion of intakes via a query parameter `?with_intakes=true`.
     Only authenticated users can access this endpoint.
     """
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
         try:
-            courses = Course.objects.prefetch_related('intakes').all()
-            serializer = CourseSerializer(courses, many=True)
+            # Check if the query parameter 'with_intakes' is passed and equals 'true'
+            with_intakes = request.query_params.get('with_intakes', 'false').lower() == 'true'
+
+            if with_intakes:
+                courses = Course.objects.prefetch_related('intakes').all()  # Prefetch intakes for optimization
+                serializer = CourseSerializer(courses, many=True)
+            else:
+                courses = Course.objects.all()  # No need to prefetch intakes
+                serializer = CourseSerializer(courses, many=True, exclude_intakes=True)
+
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
